@@ -3,6 +3,7 @@ package gexpect
 import (
 	"errors"
 	"regexp"
+	"time"
 )
 
 type Step interface {
@@ -14,10 +15,8 @@ type Flow []Step
 type ExpectStep struct {
 	expects     []*regexp.Regexp
 	timeout     int
+	delay       time.Duration
 	matchOK     bool
-	before      []byte
-	after       []byte
-	match       []byte
 	WhenMatched Flow
 	WhenTimeout Flow
 }
