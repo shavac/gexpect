@@ -16,18 +16,21 @@ func (p *Plan) BindApply() error {
 		for i, step := range flow {
 			switch s := step.(type) {
 			case VarSendStep:
+				println("VarSendStep")
 				if v, ok := p.VarList[s.VarName]; ok {
 					flow[i] = SendStep{v}
 				} else {
 					return ValueNotFoundError{s.VarName}
 				}
 			case VarSendLineStep:
+				println("VarSendLineStep")
 				if v, ok := p.VarList[s.VarName]; ok {
                     flow[i] = SendStep{v+"\n"}
                 } else {
                     return ValueNotFoundError{s.VarName}
                 }
 			case ExpectStep:
+				println("ExpectStep")
 				if err:= iter(s.WhenMatched); err != nil {
 					return err
 				}
