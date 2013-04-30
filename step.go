@@ -1,7 +1,6 @@
 package gexpect
 
 import (
-	"errors"
 	"regexp"
 	"time"
 )
@@ -9,8 +8,6 @@ import (
 type Step interface {
 	Do(*SubProcess) error
 }
-
-type Flow []Step
 
 type ExpectStep struct {
 	expects     []*regexp.Regexp
@@ -21,23 +18,9 @@ type ExpectStep struct {
 	WhenTimeout Flow
 }
 
-func (es *ExpectStep) Do(sp *SubProcess) error {
+func (es ExpectStep) Do(sp *SubProcess) error {
 	es.matchOK, err = sp.Expect(es.timeout, es.expects...)
 	return err
-}
-
-func (f *Flow) Expect(timeout int, expects ...string) *ExpectStep {
-	es := new(ExpectStep)
-	es.timeout = timeout
-	for _, e := range expects {
-		if expregex, err := regexp.Compile(e); err != nil {
-			return nil
-		} else {
-			es.expects = append(es.expects, expregex)
-		}
-	}
-	*f = append(*f, es)
-	return es
 }
 
 type SendStep struct {
@@ -54,44 +37,24 @@ func (f *Flow) Send(s string) *SendStep {
 	return ss
 }
 
-func (ss *SendStep) Do(sp *SubProcess) error {
+func (ss SendStep) Do(sp *SubProcess) error {
 	return sp.Write(ss.S)
 }
 
-type SendArgStep struct {
-	Argname string
+type VarSendStep struct {
+	VarName string
 }
 
-func (sas *SendArgStep) Do(sp *SubProcess) error {
-	if v, ok := Args[sas.Argname]; ok {
-		return sp.Write(v)
-	} else {
-		return errors.New("No such argument: " + sas.Argname)
-	}
+func (s VarSendStep) Do(sp *SubProcess) error {
+	return ValueNotBindError{s.VarName}
 }
 
-func (f *Flow) SendArg(argname string) *SendArgStep {
-	sa := &SendArgStep{argname}
-	*f = append(*f, sa)
-	return sa
+type VarSendLineStep struct {
+    VarName string
 }
 
-type SendArgLineStep struct {
-    Argname string
-}
-
-func (sals *SendArgLineStep) Do(sp *SubProcess) error {
-    if v, ok := Args[sals.Argname]; ok {
-        return sp.Write(v+"\n")
-    } else {
-        return errors.New("No such argument: " + sals.Argname)
-    }
-}
-
-func (f *Flow) SendArgLine(argname string) *SendArgLineStep {
-    sal := &SendArgLineStep{argname}
-    *f = append(*f, sal)
-    return sal
+func (s VarSendLineStep) Do(sp *SubProcess) error {
+	return ValueNotBindError{s.VarName}
 }
 
 type PromptStep struct {
@@ -105,6 +68,6 @@ func (f *Flow) Terminate() error {
 	return nil
 }
 
-func (ts *TerminateStep) Do(sp *SubProcess) error {
+func (ts TerminateStep) Do(sp *SubProcess) error {
 	return sp.Close()
 }
