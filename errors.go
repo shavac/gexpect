@@ -18,3 +18,11 @@ type ValueNotFoundError struct {
 func (e ValueNotFoundError) Error() string {
 	return "Value not found in list: " + e.VarName
 }
+
+type TerminatedError struct {
+	Message string
+}
+
+func (e TerminatedError) Error() string {
+    return "flow terminated with message: " + e.Message
+}

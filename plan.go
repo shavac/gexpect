@@ -12,7 +12,7 @@ func (p *Plan) BindVar(varname, value string) error {
 	return nil
 }
 
-func (p *Plan) BindApply() error {
+func (p *Plan) VarApply() error {
 	fn := func(step *Step) error {
 		switch s:= (*step).(type) {
 		case *VarSendStep:

@@ -3,6 +3,7 @@ package gexpect
 import (
 	"regexp"
 	"time"
+	"fmt"
 )
 
 type Step interface {
@@ -50,7 +51,7 @@ func (s VarSendStep) Do(sp *SubProcess) error {
 }
 
 type VarSendLineStep struct {
-    VarName string
+	VarName string
 }
 
 func (s VarSendLineStep) Do(sp *SubProcess) error {
@@ -58,16 +59,46 @@ func (s VarSendLineStep) Do(sp *SubProcess) error {
 }
 
 type PromptStep struct {
+	Message string
 }
 
-type TerminateStep struct{}
+func (f *Flow) Prompt(msg string) error {
+	p := &PromptStep{msg}
+	*f = append(*f, p)
+	return nil
+}
 
-func (f *Flow) Terminate() error {
-	t := new(TerminateStep)
+func (ps PromptStep) Do(sp *SubProcess) error {
+	fmt.Println(ps.Message)
+	return nil
+}
+
+type TerminateStep struct {
+	Message string
+}
+
+func (f *Flow) Terminate(msg string) error {
+	t := &TerminateStep{msg}
 	*f = append(*f, t)
 	return nil
 }
 
 func (ts TerminateStep) Do(sp *SubProcess) error {
-	return sp.Close()
+	if err := sp.Close(); err != nil {
+		return err
+	}
+	return TerminatedError{"terminate according plan with message: " + ts.Message}
+}
+
+type InteractStep struct {
+}
+
+func (f *Flow) Interact() error {
+	step := &InteractStep{}
+	*f = append(*f, step)
+	return nil
+}
+func (is InteractStep) Do(sp *SubProcess) error {
+	time.Sleep(5000)
+	return nil
 }

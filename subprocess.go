@@ -36,6 +36,10 @@ func (sp *SubProcess) Writeln(response string) (err error) {
 	return sp.Write(response+"\n")
 }
 
+func (sp *SubProcess) Interact() (err error) {
+	return nil
+}
+
 func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
 	sp.term, err = pty.NewTerminal()
 	sp.cmd = exec.Command(name, arg...)
