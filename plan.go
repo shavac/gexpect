@@ -1,45 +1,38 @@
 package gexpect
 
+//import "fmt"
+
 type Plan struct {
 	VarList map[string]string
-	Flow Flow
+	Flow    Flow
 }
 
 func (p *Plan) BindVar(varname, value string) error {
-	p.VarList[varname]=value
+	p.VarList[varname] = value
 	return nil
 }
 
 func (p *Plan) BindApply() error {
-	var iter func(Flow) error
-	iter = func(flow Flow) error {
-		for i, step := range flow {
-			switch s := step.(type) {
-			case VarSendStep:
-				println("VarSendStep")
-				if v, ok := p.VarList[s.VarName]; ok {
-					flow[i] = SendStep{v}
-				} else {
-					return ValueNotFoundError{s.VarName}
-				}
-			case VarSendLineStep:
-				println("VarSendLineStep")
-				if v, ok := p.VarList[s.VarName]; ok {
-                    flow[i] = SendStep{v+"\n"}
-                } else {
-                    return ValueNotFoundError{s.VarName}
-                }
-			case ExpectStep:
-				println("ExpectStep")
-				if err:= iter(s.WhenMatched); err != nil {
-					return err
-				}
-				if err:= iter(s.WhenTimeout); err != nil {
-					return err
-				}
+	fn := func(step *Step) error {
+		switch s:= (*step).(type) {
+		case *VarSendStep:
+			if v, ok := p.VarList[s.VarName]; ok {
+				*step = SendStep{v}
+			} else {
+				return ValueNotFoundError{s.VarName}
+			}
+		case *VarSendLineStep:
+			if v, ok := p.VarList[s.VarName]; ok {
+				*step = SendStep{v + "\n"}
+			} else {
+				return ValueNotFoundError{s.VarName}
 			}
 		}
 		return nil
 	}
-	return iter(p.Flow)
+	return Walk(p.Flow, fn)
+}
+
+func NewPlan() *Plan{
+	return &Plan{ make(map[string]string), Flow{}}
 }

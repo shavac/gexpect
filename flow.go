@@ -2,6 +2,7 @@ package gexpect
 
 import (
 	"regexp"
+	//"fmt"
 )
 
 type Flow []Step
@@ -32,3 +33,21 @@ func (f *Flow) Expect(timeout int, expects ...string) *ExpectStep {
 	return es
 }
 
+
+func Walk(flow Flow, fn func(step *Step) error) error {
+	for i, _ := range flow {
+		if err := fn(&flow[i]); err != nil {
+			return err
+		}
+		switch s := flow[i].(type) {
+		case *ExpectStep:
+			if err := Walk(s.WhenMatched, fn); err != nil {
+				return err
+			}
+			if err := Walk(s.WhenTimeout, fn); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
