@@ -51,6 +51,7 @@ func (sp *SubProcess) Interact() (err error) {
 }
 
 func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
+	sp := new(SubProcess)
 	sp.term, err = pty.NewTerminal()
 	sp.cmd = exec.Command(name, arg...)
 	sp.DelayBeforeSend = 50 * time.Microsecond
