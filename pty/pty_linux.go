@@ -36,6 +36,7 @@ func Open() (pty, tty *os.File, err error) {
 	return p, t, nil
 }
 
+
 func ptsname(f *os.File) (string, error) {
 	var n int
 	err := ioctl(f.Fd(), sys_TIOCGPTN, &n)

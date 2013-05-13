@@ -12,7 +12,7 @@ type Step interface {
 
 type ExpectStep struct {
 	expects     []*regexp.Regexp
-	timeout     int
+	timeout     time.Duration
 	delay       time.Duration
 	matchOK     bool
 	WhenMatched Flow

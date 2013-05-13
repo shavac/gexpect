@@ -28,9 +28,9 @@ func Start(c *exec.Cmd) (pty, tty *os.File, err error) {
 }
 
 func (t *Terminal)Start(c *exec.Cmd) (err error) {
-	if (t == nil) {
+	if t == nil {
 		if t, err = NewTerminal(); err != nil {
-		return err
+			return err
 		}
 	}
 	defer t.Tty.Close()

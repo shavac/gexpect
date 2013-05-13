@@ -3,6 +3,7 @@ package gexpect
 import (
 	"regexp"
 	//"fmt"
+	"time"
 )
 
 type Flow []Step
@@ -19,7 +20,7 @@ func (f *Flow) VarSendLine(argname string) *VarSendLineStep {
     return vsl
 }
 
-func (f *Flow) Expect(timeout int, expects ...string) *ExpectStep {
+func (f *Flow) Expect(timeout time.Duration, expects ...string) *ExpectStep {
 	es := new(ExpectStep)
 	es.timeout = timeout
 	for _, e := range expects {
