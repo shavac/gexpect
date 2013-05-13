@@ -1,6 +1,7 @@
 package gexpect
 
 import (
+	"errors"
 )
 
 type ValueNotBindError struct {
@@ -26,3 +27,8 @@ type TerminatedError struct {
 func (e TerminatedError) Error() string {
     return "flow terminated with message: " + e.Message
 }
+
+var (
+	EOF = errors.New("EOF")
+	TIMEOUT = errors.New("Timeout")
+)
