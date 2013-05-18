@@ -15,9 +15,9 @@ func (f *Flow) VarSend(varname string) *VarSendStep {
 }
 
 func (f *Flow) VarSendLine(argname string) *VarSendLineStep {
-    vsl := &VarSendLineStep{argname}
-    *f = append(*f, vsl)
-    return vsl
+	vsl := &VarSendLineStep{argname}
+	*f = append(*f, vsl)
+	return vsl
 }
 
 func (f *Flow) Expect(timeout time.Duration, expects ...string) *ExpectStep {
@@ -33,7 +33,6 @@ func (f *Flow) Expect(timeout time.Duration, expects ...string) *ExpectStep {
 	*f = append(*f, es)
 	return es
 }
-
 
 func Walk(flow Flow, fn func(step *Step) error) error {
 	for i, _ := range flow {

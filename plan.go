@@ -14,7 +14,7 @@ func (p *Plan) BindVar(varname, value string) error {
 
 func (p *Plan) VarApply() error {
 	fn := func(step *Step) error {
-		switch s:= (*step).(type) {
+		switch s := (*step).(type) {
 		case *VarSendStep:
 			if v, ok := p.VarList[s.VarName]; ok {
 				*step = SendStep{v}
@@ -33,6 +33,6 @@ func (p *Plan) VarApply() error {
 	return Walk(p.Flow, fn)
 }
 
-func NewPlan() *Plan{
-	return &Plan{ make(map[string]string), Flow{}}
+func NewPlan() *Plan {
+	return &Plan{make(map[string]string), Flow{}}
 }

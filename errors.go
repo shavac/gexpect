@@ -25,10 +25,10 @@ type TerminatedError struct {
 }
 
 func (e TerminatedError) Error() string {
-    return "flow terminated with message: " + e.Message
+	return "flow terminated with message: " + e.Message
 }
 
 var (
-	EOF = errors.New("EOF")
+	EOF     = errors.New("EOF")
 	TIMEOUT = errors.New("Timeout")
 )

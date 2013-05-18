@@ -2,6 +2,8 @@ package gexpect
 
 import (
 	"github.com/shavac/gexpect/pty"
+	"io"
+	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -16,9 +18,10 @@ type SubProcess struct {
 	cmd             *exec.Cmd
 	DelayBeforeSend time.Duration
 	CheckInterval   time.Duration
-	before          []byte
-	after           []byte
-	match           []byte
+	Before          []byte
+	After           []byte
+	Match           []byte
+	echo            bool
 }
 
 func (sp *SubProcess) Start() (err error) {
@@ -29,15 +32,57 @@ func (sp *SubProcess) Close() (err error) {
 	return sp.term.Close()
 }
 
-func (sp *SubProcess) Expect(timeout time.Duration, expreg ...*regexp.Regexp) (matchOK bool, err error) {
-	var buf []byte
+func (sp *SubProcess) WaitTimeout(d time.Duration) (err error) {
+	if sp.echo {
+		go func() {
+			io.Copy(os.Stdout, sp)
+		}()
+	}
+	timeout := make(chan bool, 1)
+	execerr := make(chan error, 1)
+	go func() {
+		if d == 0 {
+			return
+		}
+		time.Sleep(d)
+		timeout <- true
+	}()
+	go func() {
+		execerr <- sp.cmd.Wait()
+	}()
+	select {
+	case <-timeout:
+		return TIMEOUT
+	case err := <-execerr:
+		return err
+	}
+}
+
+func (sp *SubProcess) Wait() error {
+	return sp.WaitTimeout(0)
+}
+
+func (sp *SubProcess) Terminate() error {
+	return sp.cmd.Process.Kill()
+}
+
+func (sp *SubProcess) Expect(timeout time.Duration, expreg ...*regexp.Regexp) (matchIndex int, err error) {
+	buf := make([]byte, 2048)
+	c := make(chan byte, 1)
 	tmout := make(chan bool, 1)
 	checkpoint := make(chan int, 1)
 	rerr := make(chan error, 1)
 	go func() {
 		for {
-			_, err := sp.Read(buf)
-			rerr <- err
+			b := make([]byte, 1)
+			if _, err := io.ReadAtLeast(sp, b, 1); err != nil {
+				rerr <- err
+			}
+			c <- b[0]
+			if sp.echo {
+				os.Stdout.Write(b)
+				os.Stdout.Sync()
+			}
 		}
 	}()
 	go func() {
@@ -47,57 +92,99 @@ func (sp *SubProcess) Expect(timeout time.Duration, expreg ...*regexp.Regexp) (m
 		}
 	}()
 	go func() {
-		time.Sleep(sp.CheckInterval)
+		time.Sleep(timeout)
 		tmout <- true
 	}()
 	for {
 		select {
+		case c1 := <-c:
+			buf = append(buf, c1)
 		case <-tmout:
-			sp.before = append(sp.before, buf...)
-			return false, TIMEOUT
-		case err := <-rerr:
-			sp.before = append(sp.before, buf...)
-			return false, err
+			sp.Before = append(sp.Before, buf...)
+			return -1, TIMEOUT
+		case e := <-rerr:
+			sp.Before = append(sp.Before, buf...)
+			return -1, e
 		case <-checkpoint:
-			for _, re := range expreg {
-				if sp.match = re.Find(buf); sp.match != nil {
-					ind := re.FindIndex(buf)
-					sp.before = append(sp.before, buf[0:ind[0]]...)
-					sp.after = append(sp.after, buf[ind[0]+ind[1]:]...)
-					return true, nil
+			for idx, re := range expreg {
+				if loc := re.FindIndex(buf); loc != nil {
+					sp.Match = buf[loc[0]:loc[1]]
+					sp.Before = append(sp.Before, buf[0:loc[0]]...)
+					buf = make([]byte, 2048)
+					return idx, nil
 				}
 			} // no match
-			sp.before = append(sp.before, buf...) //fix this
-			buf = []byte{}
 		}
 	}
-	return false, nil
+	return -1, nil
 }
 
 func (sp *SubProcess) Read(b []byte) (n int, err error) {
 	return sp.term.Read(b)
 }
 
-func (sp *SubProcess) Write(response string) (err error) {
+func (sp *SubProcess) Write(b []byte) (n int, err error) {
 	time.Sleep(sp.DelayBeforeSend)
-	_, err = sp.term.Write([]byte(response))
-	return
+	return sp.term.Write(b)
 }
 
-func (sp *SubProcess) Writeln(response string) (err error) {
-	return sp.Send(response + "\n")
+func (sp *SubProcess) Writeln(b []byte) (n int, err error) {
+	if sp.echo {
+		os.Stdout.Write([]byte("\n"))
+	}
+	bn := append(b, []byte("\r\n")...)
+	return sp.Write(bn)
 }
 
 func (sp *SubProcess) Send(response string) (err error) {
-	return sp.Write(response)
+	_, err = sp.Write([]byte(response))
+	return
 }
 
 func (sp *SubProcess) SendLine(response string) (err error) {
-	return sp.Writeln(response)
+	return sp.Send(response + "\r\n")
 }
 
 func (sp *SubProcess) Interact() (err error) {
-	return nil
+	return sp.InteractTimeout(0)
+}
+
+func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
+	sp.Write(sp.buf)
+	sp.buf = ""
+	oldState, _ := pty.Tcgetattr(os.Stdin)
+	defer pty.Tcsetattr(os.Stdin, oldState)
+	pty.SetRaw(os.Stdin)
+	go func() {
+		io.Copy(os.Stdout, sp)
+		io.Copy(sp, os.Stdin)
+	}()
+	timeout := make(chan bool, 1)
+	execerr := make(chan error, 1)
+	go func() {
+		if d == 0 {
+			return
+		}
+		time.Sleep(d)
+		timeout <- true
+	}()
+	go func() {
+		execerr <- sp.cmd.Wait()
+	}()
+	select {
+	case <-timeout:
+		return TIMEOUT
+	case err := <-execerr:
+		return err
+	}
+}
+
+func (sp *SubProcess) Echo() {
+	sp.echo = true
+}
+
+func (sp *SubProcess) NoEcho() {
+	sp.echo = false
 }
 
 func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {

@@ -27,7 +27,7 @@ func Start(c *exec.Cmd) (pty, tty *os.File, err error) {
 	return pty, tty, err
 }
 
-func (t *Terminal)Start(c *exec.Cmd) (err error) {
+func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	if t == nil {
 		if t, err = NewTerminal(); err != nil {
 			return err
@@ -35,17 +35,17 @@ func (t *Terminal)Start(c *exec.Cmd) (err error) {
 	}
 	defer t.Tty.Close()
 	c.Stdout = t.Tty
-    c.Stdin = t.Tty
-    c.Stderr = t.Tty
-    err = c.Start()
-    if err != nil {
-        t.Pty.Close()
-        return
-    }
+	c.Stdin = t.Tty
+	c.Stderr = t.Tty
+	err = c.Start()
+	if err != nil {
+		t.Pty.Close()
+		return
+	}
 	return
 }
 
-func (t *Terminal)Close() (err error) {
+func (t *Terminal) Close() (err error) {
 	err = t.Tty.Close()
 	err = t.Pty.Close()
 	return

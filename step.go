@@ -1,9 +1,9 @@
 package gexpect
 
 import (
+	"fmt"
 	"regexp"
 	"time"
-	"fmt"
 )
 
 type Step interface {
@@ -14,13 +14,13 @@ type ExpectStep struct {
 	expects     []*regexp.Regexp
 	timeout     time.Duration
 	delay       time.Duration
-	matchOK     bool
+	matchIndex  int
 	WhenMatched Flow
 	WhenTimeout Flow
 }
 
 func (es ExpectStep) Do(sp *SubProcess) error {
-	es.matchOK, err = sp.Expect(es.timeout, es.expects...)
+	es.matchIndex, err = sp.Expect(es.timeout, es.expects...)
 	return err
 }
 
@@ -39,7 +39,7 @@ func (f *Flow) Send(s string) *SendStep {
 }
 
 func (ss SendStep) Do(sp *SubProcess) error {
-	return sp.Write(ss.S)
+	return sp.Send(ss.S)
 }
 
 type VarSendStep struct {
