@@ -4,6 +4,7 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
+	"errors"
 )
 
 const (
@@ -98,8 +99,15 @@ func Tcsetattr(f *os.File, state *State) (err error) {
 	return
 }
 
-func GetEOF(f *os.File) (eof byte, err error) {
-	state, err := Tcgetattr(f)
-	eof = state.termios.Cc[syscall.VEOF]
-	return byte(eof), err
+func GetControlChar(f *os.File, name string) (c byte, err error) {
+	state, _ := Tcgetattr(f)
+	switch name {
+	case "EOF":
+		c = state.termios.Cc[syscall.VEOF]
+	case "CTRL-C":
+		c = state.termios.Cc[syscall.VINTR]
+	default:
+		return 0, errors.New("No such control string")
+	}
+	return byte(c), nil
 }

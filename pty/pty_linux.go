@@ -93,6 +93,14 @@ func (t *Terminal) GetWinSize() (x, y int, err error) {
 	return GetWinSize(t.Pty)
 }
 
+func (t *Terminal) ResetWinSize() error {
+	if x, y, err := t.GetWinSize(); err != nil {
+		return err
+	} else {
+		return t.SetWinSize(x, y)
+	}
+}
+
 func (t *Terminal) SetRaw() (err error) {
 	if oldState, err := Tcgetattr(t.Pty); err != nil {
 		return err
@@ -113,6 +121,18 @@ func (t *Terminal) SetCBreak() (err error) {
 
 func (t *Terminal) Restore() (err error) {
 	return Tcsetattr(t.Pty, &t.oldState)
+}
+
+func (t *Terminal) SendIntr() (err error) {
+	c, err := GetControlChar(t.Pty, "CTRL-C")
+	_, err = t.Write([]byte{c})
+	return
+}
+
+func (t *Terminal) SendEOF() (err error) {
+    c, err := GetControlChar(t.Pty, "EOF")
+    _, err = t.Write([]byte{c})
+    return
 }
 
 func NewTerminal() (term *Terminal, err error) {

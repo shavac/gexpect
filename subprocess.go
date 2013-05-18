@@ -24,12 +24,27 @@ type SubProcess struct {
 	Match           []byte
 	echo            bool
 }
+func init() {
+	c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt)
+    go func() {
+		for sig := range c {
+            switch sig {
+			case os.Interrupt:
+				continue
+            default:
+                continue
+            }
+        }
+    }()
+}
 
 func (sp *SubProcess) Start() (err error) {
 	return sp.term.Start(sp.cmd)
 }
 
 func (sp *SubProcess) Close() (err error) {
+	sp.Terminate()
 	return sp.term.Close()
 }
 
@@ -172,7 +187,8 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		for {
 			if b, err = stdin.ReadByte(); err != nil {
 				if err == io.EOF {
-					b, _ = pty.GetEOF(sp.term.Pty)
+					pty.SendEOF()
+					continue
 				} else {
 					return err
 				}
