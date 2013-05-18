@@ -166,9 +166,8 @@ func (sp *SubProcess) Interact() (err error) {
 func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 	sp.Write(sp.After)
 	sp.After = []byte{}
-	oldState, _ := pty.Tcgetattr(os.Stdin)
-	defer pty.Tcsetattr(os.Stdin, oldState)
-	pty.SetRaw(os.Stdin)
+	sp.term.SetRaw()
+	defer sp.term.Restore()
 	timeout := make(chan bool, 1)
 	go func() {
 		if d == 0 {
