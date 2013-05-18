@@ -99,6 +99,6 @@ func Tcsetattr(f *os.File, state *State) (err error) {
 
 func GetEOF(f *os.File) (eof byte, err error) {
 	state, err := Tcgetattr(f)
-	eof := state.termios.Cc[syscall.VEOF]
+	eof = state.termios.Cc[syscall.VEOF]
 	return byte(eof), err
 }
