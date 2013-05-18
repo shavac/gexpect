@@ -171,7 +171,12 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		var b byte
 		for {
 			if b, err = stdin.ReadByte(); err != nil {
-				return err
+				if err == io.EOF {
+					state, _ := pty.Tcgetattr(sp.term.Pty)
+					b = pty.GetEOF()
+				} else {
+					return err
+				}
 			}
 			in <- b
 		}
