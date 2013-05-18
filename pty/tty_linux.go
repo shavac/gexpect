@@ -74,12 +74,13 @@ func SetCBreak(f *os.File) (err error) {
 	return Tcsetattr(f, state)
 }
 
-func Tcgetattr(f *os.File) (oldState *State, err error) {
+func Tcgetattr(f *os.File) (state *State, err error) {
+	state = new(State)
 	if _, _, err := syscall.Syscall6(
 		syscall.SYS_IOCTL,
 		uintptr(f.Fd()),
 		syscall.TCGETS,
-		uintptr(unsafe.Pointer(&oldState.termios)),
+		uintptr(unsafe.Pointer(&state.termios)),
 		0, 0, 0); err != 0 {
 		return nil, err
 	}
