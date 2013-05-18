@@ -1,6 +1,7 @@
 package gexpect
 
 import (
+	"bufio"
 	"github.com/shavac/gexpect/pty"
 	"io"
 	"os"
@@ -129,9 +130,6 @@ func (sp *SubProcess) Write(b []byte) (n int, err error) {
 }
 
 func (sp *SubProcess) Writeln(b []byte) (n int, err error) {
-	if sp.echo {
-		os.Stdout.Write([]byte("\n"))
-	}
 	bn := append(b, []byte("\r\n")...)
 	return sp.Write(bn)
 }
@@ -150,17 +148,12 @@ func (sp *SubProcess) Interact() (err error) {
 }
 
 func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
-	sp.Write(sp.buf)
-	sp.buf = ""
+	sp.Write(sp.After)
+	sp.After = []byte{}
 	oldState, _ := pty.Tcgetattr(os.Stdin)
 	defer pty.Tcsetattr(os.Stdin, oldState)
 	pty.SetRaw(os.Stdin)
-	go func() {
-		io.Copy(os.Stdout, sp)
-		io.Copy(sp, os.Stdin)
-	}()
 	timeout := make(chan bool, 1)
-	execerr := make(chan error, 1)
 	go func() {
 		if d == 0 {
 			return
@@ -168,15 +161,36 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		time.Sleep(d)
 		timeout <- true
 	}()
+	execerr := make(chan error, 1)
 	go func() {
 		execerr <- sp.cmd.Wait()
 	}()
-	select {
-	case <-timeout:
-		return TIMEOUT
-	case err := <-execerr:
-		return err
+	in := make(chan byte, 1)
+	stdin := bufio.NewReader(os.Stdin)
+	go func() error {
+		var b byte
+		for {
+			if b, err = stdin.ReadByte(); err != nil {
+				return err
+			}
+			in <- b
+		}
+	}()
+	go func() {
+		io.Copy(os.Stdout, sp)
+		return
+	}()
+	for {
+		select {
+		case <-timeout:
+			return TIMEOUT
+		case err := <-execerr:
+			return err
+		case b := <-in:
+			_, err = sp.Write([]byte{b})
+		}
 	}
+	return
 }
 
 func (sp *SubProcess) Echo() {
