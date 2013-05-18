@@ -5,6 +5,7 @@ import (
 	"github.com/shavac/gexpect/pty"
 	"io"
 	"os"
+	"os/signal"
 	"os/exec"
 	"regexp"
 	"time"
@@ -187,7 +188,7 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		for {
 			if b, err = stdin.ReadByte(); err != nil {
 				if err == io.EOF {
-					pty.SendEOF()
+					sp.term.SendEOF()
 					continue
 				} else {
 					return err
