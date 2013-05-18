@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"time"
+	"syscall"
 )
 
 var (
@@ -26,18 +27,6 @@ type SubProcess struct {
 	echo            bool
 }
 func init() {
-	c := make(chan os.Signal, 1)
-    signal.Notify(c, os.Interrupt)
-    go func() {
-		for sig := range c {
-            switch sig {
-			case os.Interrupt:
-				continue
-            default:
-                continue
-            }
-        }
-    }()
 }
 
 func (sp *SubProcess) Start() (err error) {
@@ -168,6 +157,20 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 	sp.After = []byte{}
 	sp.term.SetRaw()
 	defer sp.term.Restore()
+	s := make(chan os.Signal, 1)
+    signal.Notify(s, os.Interrupt, syscall.SIGWINCH)
+    go func() {
+		for sig := range s {
+            switch sig {
+			case os.Interrupt:
+				sp.term.SendIntr()
+			case syscall.SIGWINCH:
+				err := sp.term.ResetWinSize()
+            default:
+                continue
+            }
+        }
+    }()
 	timeout := make(chan bool, 1)
 	go func() {
 		if d == 0 {
