@@ -4,7 +4,6 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
-	"fmt"
 )
 
 const (
@@ -101,8 +100,6 @@ func Tcsetattr(f *os.File, state *State) (err error) {
 
 func GetEOF(f *os.File) (eof byte, err error) {
 	state, err := Tcgetattr(f)
-	fmt.Println(err)
-	fmt.Println(state)
 	eof = state.termios.Cc[syscall.VEOF]
 	return byte(eof), err
 }
