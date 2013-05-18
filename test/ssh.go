@@ -12,5 +12,5 @@ func main() {
 		fmt.Println(err)
 	}
 	defer child.Close()
-	child.InteractTimeout(5 * time.Second)
+	child.InteractTimeout(20 * time.Second)
 }

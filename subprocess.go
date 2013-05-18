@@ -165,7 +165,7 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 			case os.Interrupt:
 				sp.term.SendIntr()
 			case syscall.SIGWINCH:
-				err := sp.term.ResetWinSize()
+				sp.term.ResetWinSize()
             default:
                 continue
             }
