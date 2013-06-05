@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"../../gexpect"
-//	"os"
-//	"io"
+	"fmt"
+	//	"os"
+	//	"io"
 	"regexp"
 	"time"
 )
@@ -16,15 +16,15 @@ func main() {
 		fmt.Println(err)
 	}
 	r := regexp.MustCompile("\\(current\\) UNIX password:")
-	idx, _ := child.Expect(5 * time.Second, r)
+	idx, _ := child.ExpectTimeout(5*time.Second, r)
 	if idx >= 0 {
-		child.SendLine("shava123")
+		child.SendLine("P@ssw0rd")
 	}
-	if idx , _ := child.Expect(5* time.Second, regexp.MustCompile("password:")); idx >=0 {
-		child.SendLine("ngcmlfu")
+	if idx, _ := child.ExpectTimeout(5*time.Second, regexp.MustCompile("password:")); idx >= 0 {
+		child.SendLine("P@ssw0rd")
 	}
-	if idx, _ := child.Expect(5 * time.Second, regexp.MustCompile("password:")); idx >=0 {
-		child.SendLine("ngcmlfu")
+	if idx, _ := child.ExpectTimeout(5*time.Second, regexp.MustCompile("password:")); idx >= 0 {
+		child.SendLine("P@ssw0rd")
 	}
 	child.InteractTimeout(1 * time.Minute)
 }

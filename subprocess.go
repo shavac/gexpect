@@ -5,11 +5,11 @@ import (
 	"github.com/shavac/gexpect/pty"
 	"io"
 	"os"
-	"os/signal"
 	"os/exec"
+	"os/signal"
 	"regexp"
-	"time"
 	"syscall"
+	"time"
 )
 
 var (
@@ -25,8 +25,6 @@ type SubProcess struct {
 	After           []byte
 	Match           []byte
 	echo            bool
-}
-func init() {
 }
 
 func (sp *SubProcess) Start() (err error) {
@@ -46,13 +44,12 @@ func (sp *SubProcess) WaitTimeout(d time.Duration) (err error) {
 	}
 	timeout := make(chan bool, 1)
 	execerr := make(chan error, 1)
-	go func() {
-		if d == 0 {
-			return
-		}
-		time.Sleep(d)
-		timeout <- true
-	}()
+	if d > 0 {
+		go func() {
+			time.Sleep(d)
+			timeout <- true
+		}()
+	}
 	go func() {
 		execerr <- sp.cmd.Wait()
 	}()
@@ -72,7 +69,11 @@ func (sp *SubProcess) Terminate() error {
 	return sp.cmd.Process.Kill()
 }
 
-func (sp *SubProcess) Expect(timeout time.Duration, expreg ...*regexp.Regexp) (matchIndex int, err error) {
+func (sp *SubProcess) Expect(expreg ...*regexp.Regexp) (matchIndex int, err error) {
+	return sp.ExpectTimeout(0, expreg...)
+}
+
+func (sp *SubProcess) ExpectTimeout(timeout time.Duration, expreg ...*regexp.Regexp) (matchIndex int, err error) {
 	buf := make([]byte, 2048)
 	c := make(chan byte, 1)
 	tmout := make(chan bool, 1)
@@ -80,26 +81,29 @@ func (sp *SubProcess) Expect(timeout time.Duration, expreg ...*regexp.Regexp) (m
 	rerr := make(chan error, 1)
 	go func() {
 		for {
-			b := make([]byte, 1)
-			if _, err := io.ReadAtLeast(sp, b, 1); err != nil {
+			if _, err := io.ReadAtLeast(sp, buf, 1); err != nil {
 				rerr <- err
 			}
-			c <- b[0]
+			for _, b := range buf {
+				c <- b
+			}
 			if sp.echo {
-				os.Stdout.Write(b)
+				os.Stdout.Write(buf)
 				os.Stdout.Sync()
 			}
 		}
 	}()
+	if timeout > 0 {
+		go func() {
+			time.Sleep(timeout)
+			tmout <- true
+		}()
+	}
 	go func() {
 		for i := 1; ; i++ {
-			time.Sleep(time.Microsecond)
+			time.Sleep(sp.CheckInterval)
 			checkpoint <- i
 		}
-	}()
-	go func() {
-		time.Sleep(timeout)
-		tmout <- true
 	}()
 	for {
 		select {
@@ -158,19 +162,21 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 	sp.term.SetRaw()
 	defer sp.term.Restore()
 	s := make(chan os.Signal, 1)
-    signal.Notify(s, os.Interrupt, syscall.SIGWINCH)
-    go func() {
+	signal.Notify(s, syscall.SIGINT, syscall.SIGWINCH)
+	go func() {
 		for sig := range s {
-            switch sig {
-			case os.Interrupt:
+			switch sig {
+			case syscall.SIGINT:
+				println("keyboard interrupt")
 				sp.term.SendIntr()
 			case syscall.SIGWINCH:
+				println("resize")
 				sp.term.ResetWinSize()
-            default:
-                continue
-            }
-        }
-    }()
+			default:
+				continue
+			}
+		}
+	}()
 	timeout := make(chan bool, 1)
 	go func() {
 		if d == 0 {

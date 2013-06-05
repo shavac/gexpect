@@ -20,7 +20,7 @@ type ExpectStep struct {
 }
 
 func (es ExpectStep) Do(sp *SubProcess) error {
-	es.matchIndex, err = sp.Expect(es.timeout, es.expects...)
+	es.matchIndex, err = sp.Expect(es.expects...)
 	return err
 }
 

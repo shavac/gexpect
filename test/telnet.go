@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"../../gexpect"
+	"fmt"
 	"regexp"
 	"time"
 )
@@ -15,11 +15,11 @@ func main() {
 	}
 	defer child.Close()
 	r := regexp.MustCompile(":")
-	idx, _ := child.Expect(5 * time.Second, r)
+	idx, _ := child.ExpectTimeout(5*time.Second, r)
 	if idx >= 0 {
 		child.SendLine("knightmare")
 	}
-	if idx , _ := child.Expect(5* time.Second, regexp.MustCompile(":")); idx >=0 {
+	if idx, _ := child.ExpectTimeout(5*time.Second, regexp.MustCompile(":")); idx >= 0 {
 		child.SendLine("shava123")
 	}
 	child.InteractTimeout(1 * time.Minute)

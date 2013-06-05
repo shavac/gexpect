@@ -130,9 +130,15 @@ func (t *Terminal) SendIntr() (err error) {
 }
 
 func (t *Terminal) SendEOF() (err error) {
-    c, err := GetControlChar(t.Pty, "EOF")
-    _, err = t.Write([]byte{c})
-    return
+	c, err := GetControlChar(t.Pty, "EOF")
+	_, err = t.Write([]byte{c})
+	return
+}
+
+func (t *Terminal) Close() (err error) {
+	err = t.Tty.Close()
+	err = t.Pty.Close()
+	return
 }
 
 func NewTerminal() (term *Terminal, err error) {
