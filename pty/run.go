@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"syscall"
 	"errors"
+	"fmt"
 )
 
 // Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
@@ -20,13 +21,13 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	if t == nil {
 		return errors.New("terminal not assigned.")
 	}
-	defer t.Tty.Close()
+	//defer t.Tty.Close()
 	c.Stdout = t.Tty
 	c.Stdin = t.Tty
 	c.Stderr = t.Tty
 	c.SysProcAttr = &syscall.SysProcAttr{Setctty: true, Setsid: true}
 	if err = c.Start() ; err != nil {
-		println("error is ",err)
+		fmt.Println("error is ",err)
 		t.Pty.Close()
 		return
 	}

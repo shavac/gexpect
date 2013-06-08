@@ -150,10 +150,11 @@ func (sp *SubProcess) Interact() (err error) {
 func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 	sp.Write(sp.After)
 	sp.After = []byte{}
-	sp.term.SetRaw()
-	defer sp.term.Restore()
+	oldState, _ := pty.Tcgetattr(os.Stdin)
+	pty.SetRaw(os.Stdin)
+	defer pty.Tcsetattr(os.Stdin, oldState)
 	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGINT, syscall.SIGWINCH, syscall.SIGSTOP)
+	signal.Notify(s, syscall.SIGINT, syscall.SIGWINCH, syscall.SIGTSTP)
 	go func() {
 		for sig := range s {
 			switch sig {
@@ -222,28 +223,12 @@ func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
 	if sp.term, err = pty.NewTerminal(); err != nil {
 		return
 	}
-	sp.term.Pty.Close()
-	sp.term.Pty = os.Stdin
-	syscall.Dup2(int(sp.term.Tty.Fd()), int(os.Stdin.Fd()))
-	syscall.Dup2(int(sp.term.Tty.Fd()), int(os.Stdout.Fd()))
-	syscall.Dup2(int(sp.term.Tty.Fd()), int(os.Stderr.Fd()))
 	sp.cmd = exec.Command(name, arg...)
 	sp.DelayBeforeSend = 50 * time.Microsecond
 	sp.CheckInterval = time.Microsecond
 	if x, y, err := pty.GetWinSize(os.Stdout); err == nil {
 		sp.term.SetWinSize(x, y)
+
 	}
 	return
 }
-
-
-
-
-
-
-
-
-
-
-
-
