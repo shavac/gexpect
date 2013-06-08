@@ -57,13 +57,13 @@ func (t *Terminal) Restore() (err error) {
 }
 
 func (t *Terminal) SendIntr() (err error) {
-	c, err := GetControlChar(t.Tty, "CTRL-C")
+	c, err := GetControlChar(t.Pty, "CTRL-C")
 	_, err = t.Write([]byte{c})
 	return
 }
 
 func (t *Terminal) SendEOF() (err error) {
-	c, err := GetControlChar(t.Tty, "EOF")
+	c, err := GetControlChar(t.Pty, "EOF")
 	_, err = t.Write([]byte{c})
 	return
 }
@@ -79,4 +79,8 @@ func NewTerminal() (term *Terminal, err error) {
 	term = &Terminal{Pty: pty, Tty: tty}
 	return
 }
+
+
+
+
 
