@@ -17,6 +17,13 @@ const (
 	CC     = 6
 )
 
+type ttySize struct {
+	Rows   uint16
+	Cols   uint16
+	Xpixel uint16
+	Ypixel uint16
+}
+
 type State struct {
 	termios syscall.Termios
 }
@@ -107,7 +114,7 @@ func GetControlChar(f *os.File, name string) (c byte, err error) {
 	case "CTRL-C":
 		c = state.termios.Cc[syscall.VINTR]
 	default:
-		return 0, errors.New("No such control string")
+		return 0, errors.New("No such controlling character.")
 	}
 	return byte(c), nil
 }

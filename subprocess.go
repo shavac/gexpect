@@ -42,23 +42,17 @@ func (sp *SubProcess) WaitTimeout(d time.Duration) (err error) {
 			io.Copy(os.Stdout, sp)
 		}()
 	}
-	timeout := make(chan bool, 1)
 	execerr := make(chan error, 1)
 	if d > 0 {
 		go func() {
 			time.Sleep(d)
-			timeout <- true
+			execerr <- TIMEOUT
 		}()
 	}
 	go func() {
 		execerr <- sp.cmd.Wait()
 	}()
-	select {
-	case <-timeout:
-		return TIMEOUT
-	case err := <-execerr:
-		return err
-	}
+	return <-execerr
 }
 
 func (sp *SubProcess) Wait() error {
@@ -76,13 +70,13 @@ func (sp *SubProcess) Expect(expreg ...*regexp.Regexp) (matchIndex int, err erro
 func (sp *SubProcess) ExpectTimeout(timeout time.Duration, expreg ...*regexp.Regexp) (matchIndex int, err error) {
 	buf := make([]byte, 2048)
 	c := make(chan byte, 1)
-	tmout := make(chan bool, 1)
 	checkpoint := make(chan int, 1)
 	rerr := make(chan error, 1)
 	go func() {
 		for {
 			if _, err := io.ReadAtLeast(sp, buf, 1); err != nil {
 				rerr <- err
+				continue
 			}
 			for _, b := range buf {
 				c <- b
@@ -96,7 +90,7 @@ func (sp *SubProcess) ExpectTimeout(timeout time.Duration, expreg ...*regexp.Reg
 	if timeout > 0 {
 		go func() {
 			time.Sleep(timeout)
-			tmout <- true
+			rerr <- TIMEOUT
 		}()
 	}
 	go func() {
@@ -109,9 +103,6 @@ func (sp *SubProcess) ExpectTimeout(timeout time.Duration, expreg ...*regexp.Reg
 		select {
 		case c1 := <-c:
 			buf = append(buf, c1)
-		case <-tmout:
-			sp.Before = append(sp.Before, buf...)
-			return -1, TIMEOUT
 		case e := <-rerr:
 			sp.Before = append(sp.Before, buf...)
 			return -1, e
@@ -167,25 +158,23 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		for sig := range s {
 			switch sig {
 			case syscall.SIGINT:
-				println("keyboard interrupt")
 				sp.term.SendIntr()
 			case syscall.SIGWINCH:
-				println("resize")
-				sp.term.ResetWinSize()
+				if x, y, err := pty.GetWinSize(os.Stdout); err == nil {
+					sp.term.SetWinSize(x, y)
+				}
 			default:
 				continue
 			}
 		}
 	}()
-	timeout := make(chan bool, 1)
-	go func() {
-		if d == 0 {
-			return
-		}
-		time.Sleep(d)
-		timeout <- true
-	}()
 	execerr := make(chan error, 1)
+	if d > 0 {
+		go func() {
+			time.Sleep(d)
+			execerr <- TIMEOUT
+		}()
+	}
 	go func() {
 		execerr <- sp.cmd.Wait()
 	}()
@@ -211,8 +200,6 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 	}()
 	for {
 		select {
-		case <-timeout:
-			return TIMEOUT
 		case err := <-execerr:
 			return err
 		case b := <-in:
@@ -236,5 +223,8 @@ func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
 	sp.cmd = exec.Command(name, arg...)
 	sp.DelayBeforeSend = 50 * time.Microsecond
 	sp.CheckInterval = time.Microsecond
+	if x, y, err := pty.GetWinSize(os.Stdout); err == nil {
+		sp.term.SetWinSize(x, y)
+	}
 	return
 }
