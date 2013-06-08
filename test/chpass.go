@@ -11,7 +11,7 @@ import (
 
 func main() {
 	child, _ := gexpect.NewSubProcess("/usr/bin/passwd")
-	child.Echo()
+	//child.Echo()
 	if err := child.Start(); err != nil {
 		fmt.Println(err)
 	}
