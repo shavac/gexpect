@@ -26,7 +26,7 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	c.Stderr = t.Tty
 	c.SysProcAttr = &syscall.SysProcAttr{Setctty: true, Setsid: true}
 	if err = c.Start() ; err != nil {
-		println(err)
+		println("error is ",err)
 		t.Pty.Close()
 		return
 	}
