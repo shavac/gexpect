@@ -13,7 +13,7 @@ func main() {
 		fmt.Println(err)
 	}
 	defer child.Close()
-	if idx, _ := child.ExpectTimeout(5*time.Second, regexp.MustCompile("password:")); idx >= 0 {
+	if idx, _ := child.ExpectTimeout(0*time.Second, regexp.MustCompile("password:")); idx >= 0 {
 		child.SendLine("P@ssw0rd")
 	}
 	child.InteractTimeout(20 * time.Second)

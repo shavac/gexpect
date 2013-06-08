@@ -79,8 +79,3 @@ func NewTerminal() (term *Terminal, err error) {
 	term = &Terminal{Pty: pty, Tty: tty}
 	return
 }
-
-
-
-
-
