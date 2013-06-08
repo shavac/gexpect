@@ -153,7 +153,7 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 	sp.term.SetRaw()
 	defer sp.term.Restore()
 	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGINT, syscall.SIGWINCH)
+	signal.Notify(s, syscall.SIGINT, syscall.SIGWINCH, syscall.SIGSTOP)
 	go func() {
 		for sig := range s {
 			switch sig {
@@ -219,7 +219,14 @@ func (sp *SubProcess) NoEcho() {
 
 func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
 	sp = new(SubProcess)
-	sp.term, err = pty.NewTerminal()
+	if sp.term, err = pty.NewTerminal(); err != nil {
+		return
+	}
+	sp.term.Pty.Close()
+	sp.term.Pty = os.Stdin
+	syscall.Dup2(int(sp.term.Tty.Fd()), int(os.Stdin.Fd()))
+	syscall.Dup2(int(sp.term.Tty.Fd()), int(os.Stdout.Fd()))
+	syscall.Dup2(int(sp.term.Tty.Fd()), int(os.Stderr.Fd()))
 	sp.cmd = exec.Command(name, arg...)
 	sp.DelayBeforeSend = 50 * time.Microsecond
 	sp.CheckInterval = time.Microsecond
@@ -228,3 +235,15 @@ func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
 	}
 	return
 }
+
+
+
+
+
+
+
+
+
+
+
+
