@@ -12,16 +12,17 @@ type Terminal struct {
 }
 
 func (t *Terminal) Write(b []byte) (n int, err error) {
+	return t.Pty.Write(b)
+}
+
+func (t *Terminal) Read(b []byte) (n int, err error) {
+	n, err = t.Pty.Read(b)
 	for _, r := range t.Recorder {
 		if n, err := r.Write(b) ; err != nil {
 			return n, err
 		}
 	}
-	return t.Pty.Write(b)
-}
-
-func (t *Terminal) Read(b []byte) (n int, err error) {
-	return t.Pty.Read(b)
+	return n, err
 }
 
 func (t *Terminal) SetWinSize(x, y int) error {
@@ -75,6 +76,9 @@ func (t *Terminal) SendEOF() (err error) {
 }
 
 func (t *Terminal) Close() (err error) {
+	for _, r := range t.Recorder {
+		r.Close()
+	}
 	err = t.Tty.Close()
 	err = t.Pty.Close()
 	return

@@ -3,15 +3,18 @@ package main
 import (
 	"../../gexpect"
 	"fmt"
-	//	"os"
-	//	"io"
+	"os"
+	"io/ioutil"
 	"regexp"
 	"time"
 )
 
 func main() {
 	child, _ := gexpect.NewSubProcess("/usr/bin/passwd")
-	//child.Echo()
+	rec, _ := ioutil.TempFile(os.TempDir(), "rec")
+	println(rec.Name())
+	child.Term.Recorder = append (child.Term.Recorder, rec)
+	child.Echo()
 	if err := child.Start(); err != nil {
 		fmt.Println(err)
 	}

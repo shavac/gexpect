@@ -17,7 +17,7 @@ var (
 )
 
 type SubProcess struct {
-	term            *pty.Terminal
+	Term            *pty.Terminal
 	cmd             *exec.Cmd
 	DelayBeforeSend time.Duration
 	CheckInterval   time.Duration
@@ -28,12 +28,12 @@ type SubProcess struct {
 }
 
 func (sp *SubProcess) Start() (err error) {
-	return sp.term.Start(sp.cmd)
+	return sp.Term.Start(sp.cmd)
 }
 
 func (sp *SubProcess) Close() (err error) {
 	sp.Terminate()
-	return sp.term.Close()
+	return sp.Term.Close()
 }
 
 func (sp *SubProcess) WaitTimeout(d time.Duration) (err error) {
@@ -121,12 +121,12 @@ func (sp *SubProcess) ExpectTimeout(timeout time.Duration, expreg ...*regexp.Reg
 }
 
 func (sp *SubProcess) Read(b []byte) (n int, err error) {
-	return sp.term.Read(b)
+	return sp.Term.Read(b)
 }
 
 func (sp *SubProcess) Write(b []byte) (n int, err error) {
 	time.Sleep(sp.DelayBeforeSend)
-	return sp.term.Write(b)
+	return sp.Term.Write(b)
 }
 
 func (sp *SubProcess) Writeln(b []byte) (n int, err error) {
@@ -159,10 +159,10 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		for sig := range s {
 			switch sig {
 			case syscall.SIGINT:
-				sp.term.SendIntr()
+				sp.Term.SendIntr()
 			case syscall.SIGWINCH:
 				if x, y, err := pty.GetWinSize(os.Stdout); err == nil {
-					sp.term.SetWinSize(x, y)
+					sp.Term.SetWinSize(x, y)
 				}
 			default:
 				continue
@@ -186,7 +186,7 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		for {
 			if b, err = stdin.ReadByte(); err != nil {
 				if err == io.EOF {
-					sp.term.SendEOF()
+					sp.Term.SendEOF()
 					continue
 				} else {
 					return err
@@ -220,14 +220,14 @@ func (sp *SubProcess) NoEcho() {
 
 func NewSubProcess(name string, arg ...string) (sp *SubProcess, err error) {
 	sp = new(SubProcess)
-	if sp.term, err = pty.NewTerminal(); err != nil {
+	if sp.Term, err = pty.NewTerminal(); err != nil {
 		return
 	}
 	sp.cmd = exec.Command(name, arg...)
 	sp.DelayBeforeSend = 50 * time.Microsecond
 	sp.CheckInterval = time.Microsecond
 	if x, y, err := pty.GetWinSize(os.Stdout); err == nil {
-		sp.term.SetWinSize(x, y)
+		sp.Term.SetWinSize(x, y)
 
 	}
 	return
