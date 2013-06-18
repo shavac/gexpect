@@ -7,10 +7,16 @@ import (
 type Terminal struct {
 	Pty      *os.File
 	Tty      *os.File
+	Recorder []*os.File
 	oldState State
 }
 
 func (t *Terminal) Write(b []byte) (n int, err error) {
+	for _, r := range t.Recorder {
+		if n, err := r.Write(b) ; err != nil {
+			return n, err
+		}
+	}
 	return t.Pty.Write(b)
 }
 
