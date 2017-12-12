@@ -26,7 +26,6 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	}
 
 	var stdout bytes.Buffer
-	fmt.Println(t.Tty.Name())
 	c.Stdout = bufio.NewWriter(&stdout)
 	c.Stdin = t.Tty
 	c.Stderr = bufio.NewWriter(&stdout)
@@ -34,7 +33,7 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	go func() {
 		for {
 			time.Sleep(10)
-			by, _ := stdout.ReadBytes(20)
+			by, _ := stdout.ReadBytes(3)
 			t.Tty.Write(by)
 			if t.Log != nil {
 				t.Log.Write(by)
