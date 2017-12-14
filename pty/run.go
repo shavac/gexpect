@@ -32,8 +32,11 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 
 	go func() {
 		for {
-			time.Sleep(10)
-			by, _ := stdout.ReadBytes(3)
+			time.Sleep(20)
+			by, _ := stdout.ReadBytes(10)
+			if by == nil {
+				continue
+			}
 			t.Tty.Write(by)
 			if t.Log != nil {
 				t.Log.Write(by)
