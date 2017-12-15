@@ -75,11 +75,13 @@ func (t *Terminal) SendEOF() (err error) {
 }
 
 func (t *Terminal) Close() (err error) {
+	stdout.Reset()
 	for _, r := range t.Recorder {
 		r.Close()
 	}
 	err = t.Tty.Close()
 	err = t.Pty.Close()
+
 	return
 }
 

@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+var (
+	stdout bytes.Buffer
+)
+
 // Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
 // and c.Stderr, calls c.Start, and returns the File of the tty's
 // corresponding pty.
@@ -25,24 +29,11 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 		return errors.New("terminal not assigned.")
 	}
 
-	var stdout bytes.Buffer
+	//defer stdout.Reset()
+
 	c.Stdout = bufio.NewWriter(&stdout)
 	c.Stdin = t.Tty
 	c.Stderr = bufio.NewWriter(&stdout)
-
-	go func() {
-		for {
-			time.Sleep(20)
-			by, _ := stdout.ReadBytes(10)
-			if by == nil {
-				continue
-			}
-			t.Tty.Write(by)
-			if t.Log != nil {
-				t.Log.Write(by)
-			}
-		}
-	}()
 
 	c.SysProcAttr = &syscall.SysProcAttr{Setctty: true, Setsid: true}
 	if err = c.Start(); err != nil {
@@ -50,5 +41,23 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 		t.Pty.Close()
 		return
 	}
+
+	//ch := make(chan bool, 1)
+	go func() {
+		for {
+			time.Sleep(10)
+			by, _ := stdout.ReadBytes(255)
+			if len(by) == 0 {
+				time.Sleep(100)
+				continue
+			}
+
+			t.Tty.Write(by)
+			if t.Log != nil {
+				t.Log.Write(by)
+			}
+		}
+	}()
+
 	return
 }
