@@ -51,6 +51,8 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 				'\x27' |
 				'\x7b' |
 				'\x7d' |
+				'\x09' |
+				'\x0b' |
 				'\x20'))
 
 			t.Tty.Write(by)
