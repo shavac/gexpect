@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os/exec"
 	"syscall"
-	"time"
 )
 
 var (
@@ -32,6 +31,9 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	//defer stdout.Reset()
 
 	c.Stdout = bufio.NewWriter(&stdout)
+	//c.Stdout = t.Tty
+	//c.Stdin = t.Tty
+	//c.Stderr = t.Tty
 	c.Stdin = t.Tty
 	c.Stderr = bufio.NewWriter(&stdout)
 
@@ -42,21 +44,64 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 		return
 	}
 
+	//frd := bufio.NewReader(&stdout)
 	//ch := make(chan bool, 1)
+	//tee := io.TeeReader(t.Tty, t.Log)
 	go func() {
+		//w := make([]byte, 4096)
+
 		for {
-			time.Sleep(10)
-			by, _ := stdout.ReadBytes(255)
-			if len(by) == 0 {
-				time.Sleep(100)
+			by, _ := stdout.ReadBytes(10)
+			if by == nil {
 				continue
 			}
+			//w = w[:cap(w)]
+			//n, err :=
+			//stdout.WriteByte(w)
+			//_, err := stdout.WriteTo(w)
+			//if err != nil {
+			//	fmt.Println(err)
+			//}
+			// io.TeeReader(t.Tty, t.Log)
 
+			//nb := stdout.Len()
+			//if nb > 50 {
+			//	-nb = 50
+			//}
+
+			//w := stdout.Next(nb)
+			//s, err := stdout.Read(w)
+			//scanner := bufio.NewScanner(&stdout)
+			//for scanner.Scan() {
+			//	t.Tty.Write(scanner.Bytes())
+			//	if t.Log != nil {
+			//		t.Log.Write(scanner.Bytes())
+			//	}
+			//}
+			//fmt.Println(s)
+			//if s == 0 {
+			//	continue
+			//}
+			//fmt.Println(s)
+			//for scanner.
+			//_, err :=
+			//	io.ByteReader
+			//	by, err := rd.ReadBytes('\n')
+			//if r > 0 {
+			//	fmt.Println(by)
+			//}
+			//by, err := stdout.ReadBytes('\n')
+			//if err != nil {
+			//	fmt.Println(err)
+			//	continue
+			//}
 			t.Tty.Write(by)
 			if t.Log != nil {
 				t.Log.Write(by)
 			}
+
 		}
+		//io.Copy(t.Log, t.Tty)
 	}()
 
 	return
