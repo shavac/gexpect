@@ -43,7 +43,7 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	go func() {
 		for {
 			time.Sleep(10)
-			by, _ := stdout.ReadBytes('\x0a')
+			by, _ := stdout.ReadBytes(('\x0a' | '\x23' | '\x24' | '\x25'))
 
 			t.Tty.Write(by)
 			if t.Log != nil {
