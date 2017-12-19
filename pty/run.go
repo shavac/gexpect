@@ -1,13 +1,12 @@
 package pty
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"syscall"
-	"time"
 )
 
 var (
@@ -29,9 +28,19 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 		return errors.New("terminal not assigned.")
 	}
 
-	c.Stdout = bufio.NewWriter(&stdout)
+	//x := io.MultiWriter(t.Tty, &stdout)
+	//c.Stdout = bufio.NewWriter(&stdout)
+	//c.Stdout = bufio.NewWriterSize(&stdout, 10485760)
+	fmt.Println(t.Log.Name())
+
+	c.Stdout = io.MultiWriter(t.Tty, t.Log)
+
+	//c.Stdout = t.Tty
 	c.Stdin = t.Tty
-	c.Stderr = bufio.NewWriter(&stdout)
+	//c.Stderr = bufio.NewWriter(&stdout)
+	//c.Stderr = bufio.NewWriterSize(&stdout, 10485760)
+	c.Stderr = io.MultiWriter(t.Tty, t.Log)
+	//c.Stderr = t.Tty
 
 	c.SysProcAttr = &syscall.SysProcAttr{Setctty: true, Setsid: true}
 	if err = c.Start(); err != nil {
@@ -40,27 +49,64 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 		return
 	}
 
-	go func() {
-		for {
-			time.Sleep(10)
-			by, _ := stdout.ReadBytes(('\x0a' |
-				'\x23' |
-				'\x24' |
-				'\x25' |
-				'\x22' |
-				'\x27' |
-				'\x7b' |
-				'\x7d' |
-				'\x09' |
-				'\x0b' |
-				'\x20'))
+	//go func() {
+	//	for {
+	//stdr := bufio.NewReader(&stdout)
+	//w := make([]byte, 4096)
+	//	time.Sleep(100)
+	//			by, _ := stdout.ReadBytes(('\x0a' |
+	//				'\x23' |
+	//				'\x24' |
+	//				'\x25' |
+	//				'\x22' |
+	//				'\x27' |
+	//				'\x7b' |
+	//				'\x7d' |
+	//				'\x09' |
+	//				'\x0b' |
+	//				'\x20'))
+	//		by, _ := stdout.ReadBytes('\n' | '\'' | '"' | ' ' | '\\')
+	//by := stdout.Next(256)
 
-			t.Tty.Write(by)
-			if t.Log != nil {
-				t.Log.Write(by)
-			}
-		}
-	}()
+	//by, _ := stdout.ReadBytes(' ')
+
+	//reader := bufio.NewReader(&stdout)
+	//by, _ := ioutil.ReadAll(reader)
+
+	//e_, err := io.ReadFull(stdr, w)
+
+	//if err != io.EOF {
+	//	fmt.Fprintln(os.Stderr, err)
+	//}
+	//by := make([]byte, 4096)
+	//n, err := stdout.Read(by)
+	//if n == 0 {
+	//	continue
+	//}
+	//if err == io.EOF {
+	//	continue
+	//}
+	//by = []byte{}
+	//for i := 1; i <= 4096; i++ {
+	//	c, err := stdout.ReadByte()
+	//	if err == io.EOF {
+	//		break
+	//	}
+	//	by = append(by, c)
+	//}
+
+	//	by, err := stdout.ReadBytes((' ' | '\n'))
+	//	if err != io.EOF && err != nil {
+	//		fmt.Println(err)
+	//	}
+
+	//t.Tty.Write(by)
+	//		if t.Log != nil {
+	//			t.Log.Write(by)
+	//		}
+	//by = []byte{}
+	//	}
+	//}()
 
 	return
 }
