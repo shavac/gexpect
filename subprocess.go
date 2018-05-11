@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/blacknon/gexpect/pty"
+	"github.com/shavac/gexpect/pty"
 )
 
 var (
