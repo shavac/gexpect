@@ -1,13 +1,12 @@
 package pty
 
-import (
-	"os"
-)
+import "os"
 
 type Terminal struct {
 	Pty      *os.File
 	Tty      *os.File
 	Recorder []*os.File
+	Log      *os.File
 	oldState State
 }
 
@@ -18,7 +17,7 @@ func (t *Terminal) Write(b []byte) (n int, err error) {
 func (t *Terminal) Read(b []byte) (n int, err error) {
 	n, err = t.Pty.Read(b)
 	for _, r := range t.Recorder {
-		if n, err := r.Write(b) ; err != nil {
+		if n, err := r.Write(b); err != nil {
 			return n, err
 		}
 	}
@@ -76,11 +75,13 @@ func (t *Terminal) SendEOF() (err error) {
 }
 
 func (t *Terminal) Close() (err error) {
+	stdout.Reset()
 	for _, r := range t.Recorder {
 		r.Close()
 	}
 	err = t.Tty.Close()
 	err = t.Pty.Close()
+
 	return
 }
 

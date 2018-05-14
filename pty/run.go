@@ -1,10 +1,16 @@
 package pty
 
 import (
-	"os/exec"
-	"syscall"
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"os/exec"
+	"syscall"
+)
+
+var (
+	stdout bytes.Buffer
 )
 
 // Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
@@ -21,15 +27,21 @@ func (t *Terminal) Start(c *exec.Cmd) (err error) {
 	if t == nil {
 		return errors.New("terminal not assigned.")
 	}
-	//defer t.Tty.Close()
+
 	c.Stdout = t.Tty
 	c.Stdin = t.Tty
 	c.Stderr = t.Tty
+	if t.Log != nil {
+		c.Stdout = io.MultiWriter(t.Tty, t.Log)
+		c.Stderr = io.MultiWriter(t.Tty, t.Log)
+	}
+
 	c.SysProcAttr = &syscall.SysProcAttr{Setctty: true, Setsid: true}
-	if err = c.Start() ; err != nil {
-		fmt.Println("error is ",err)
+	if err = c.Start(); err != nil {
+		fmt.Println("error is ", err)
 		t.Pty.Close()
 		return
 	}
+
 	return
 }

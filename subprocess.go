@@ -2,7 +2,6 @@ package gexpect
 
 import (
 	"bufio"
-	"github.com/shavac/gexpect/pty"
 	"io"
 	"os"
 	"os/exec"
@@ -10,6 +9,8 @@ import (
 	"regexp"
 	"syscall"
 	"time"
+
+	"github.com/shavac/gexpect/pty"
 )
 
 var (
@@ -200,6 +201,7 @@ func (sp *SubProcess) InteractTimeout(d time.Duration) (err error) {
 		return
 	}()
 	for {
+
 		select {
 		case err := <-execerr:
 			return err
